@@ -74,7 +74,11 @@ def getPlaylistTracks(sp, userId, playlistId):
 def main():
     configure()
 
-    filename = str(input("Enter filename: "))
+    filepath = str(input("Enter destination filepath: "))
+    if not os.path.exists(filepath):
+        print("ERROR: invalid filepath")
+        return(-1)
+
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
                          client_secret=CLIENT_KEY, redirect_uri=URI, scope=SCOPE))
 
@@ -90,8 +94,14 @@ def main():
 
         data[name] = playlistInfo
 
-    with open("%s.json" % filename, "w") as fp:
-        json.dump(data, fp)
+    with open("%s/spotify-%s.json" % (filepath, USERNAME), "w") as fp:
+        try:
+            json.dump(data, fp)
+        except:
+            print("Unable to export playlists")
+            return(-1)
+
+        print("spotify-%s.json created at %s" % (USERNAME, filepath))
 
 
 if __name__ == "__main__":
