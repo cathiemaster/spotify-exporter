@@ -90,6 +90,22 @@ def getPlaylistTracks(sp, userId, playlistId):
     # return playlistTracks
 
 
+def getPlaylists(sp):
+    res = sp.current_user_playlists()
+    data = {}
+
+    for playlist in res["items"]:
+        id = playlist["id"]
+        name = getPlaylistName(sp, id)
+        tracklist = getPlaylistTracks(sp, USERNAME, id)
+
+        playlistInfo = {"id": id, "data": tracklist}
+
+        data[name] = playlistInfo
+
+    return data
+
+
 def processSavedTracks(tracks):
     data = []
 
@@ -141,43 +157,33 @@ def createFile(filepath, username, data):
 def main():
     configure()
 
-    # parser = argparse.ArgumentParser()
-    # options = parser.add_argument_group(required=True)
-    # options.add_argument("-p", "--playlists", help="User playlist data")
-    # options.add_argument("-t", "--tracks", help="User liked tracks")
-    # parser.add_argument("path", help="Destination file path", required=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--playlists",
+                        help="Export playlists to provided filename")
+    parser.add_argument(
+        "-t", "--tracks", help="Export saved tracks to provided filename")
+    args = parser.parse_args()
+    print(args)
 
-    filepath = str(input("Enter destination filepath: "))
-    if not os.path.exists(filepath):
-        print("ERROR: invalid filepath")
-        return(-1)
+    if (not args.tracks) or (not args.playlists):
+        print("You must specify at least one option.\nCheck --help for more information.")
 
-    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
-                         client_secret=CLIENT_KEY, redirect_uri=URI, scope=LIBRARY_READ_SCOPE))
+    # sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
+    #                      client_secret=CLIENT_KEY, redirect_uri=URI, scope=LIBRARY_READ_SCOPE))
 
-    data = getSavedTracks(sp)
-    # print(len(data))
+    # data = getSavedTracks(sp)
+    # # print(len(data))
 
-    #results = sp.current_user_playlists()
-    # data = {}
+    # # data = getPlaylists(sp)
 
-    # for p in results["items"]:
-    #     id = p["id"]
-    #     name = getPlaylistName(sp, id)
-    #     tracklist = getPlaylistTracks(sp, USERNAME, id)
+    # with open("%s/spotify-tracks-%s.json" % (filepath, USERNAME), "w") as fp:
+    #     try:
+    #         json.dump(data, fp)
+    #     except:
+    #         print("Unable to export playlists")
+    #         return(-1)
 
-    #     playlistInfo = {"id": id, "data": tracklist}
-
-    #     data[name] = playlistInfo
-
-    with open("%s/spotify-tracks-%s.json" % (filepath, USERNAME), "w") as fp:
-        try:
-            json.dump(data, fp)
-        except:
-            print("Unable to export playlists")
-            return(-1)
-
-        print("spotify-tracks-%s.json created at %s" % (USERNAME, filepath))
+    #     print("spotify-tracks-%s.json created at %s" % (USERNAME, filepath))
 
 
 if __name__ == "__main__":
