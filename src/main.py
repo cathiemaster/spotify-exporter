@@ -1,11 +1,10 @@
 # Created: Feb 09 2022
 # Spotify Playlist Exporter
 
-from concurrent.futures import process
 import json
 import os
 import argparse
-from venv import create
+import datetime
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
@@ -135,7 +134,10 @@ def getSavedTracks(sp):
 
 
 def createFile(filename, data):
-    with open("%s.json" % (filename), "w") as fp:
+    curDatetime = datetime.datetime.now().strftime("%m%d%Y-%H%M")
+    print(curDatetime)
+
+    with open("%s-%s.json" % (filename, curDatetime), "w") as fp:
         try:
             json.dump(data, fp)
         except:
