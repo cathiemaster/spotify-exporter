@@ -5,6 +5,7 @@ from concurrent.futures import process
 import json
 import os
 import argparse
+from venv import create
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
@@ -33,6 +34,11 @@ def configure():
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_KEY = os.getenv("CLIENT_KEY")
     USERNAME = os.getenv("USERNAME")
+
+
+def getAuth(scope):
+    return spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
+                                                     client_secret=CLIENT_KEY, redirect_uri=URI, scope=LIBRARY_READ_SCOPE))
 
 
 def getPlaylistName(sp, playlistId):
@@ -71,23 +77,8 @@ def getPlaylistTracks(sp, userId, playlistId):
         res = sp.next(res)
         trackData.extend(res["items"])
 
-    playlistTracks = processSavedTracks(t)
+    playlistTracks = processSavedTracks(trackData)
     return playlistTracks
-
-    # for t in trackData:
-    #     artists = getArtists(t)
-    #     album = getAlbum(t)
-    #     track = getTrack(t)
-
-    #     datetime = t["added_at"]
-
-    #     playlistTracks.append(
-    #         {"datetime": datetime,
-    #          "artists": artists,
-    #          "album": album,
-    #          "title": track})
-
-    # return playlistTracks
 
 
 def getPlaylists(sp):
@@ -143,15 +134,17 @@ def getSavedTracks(sp):
     return data
 
 
-def createFile(filepath, username, data):
-    with open("%s/spotify-%s.json" % (filepath, username), "w") as fp:
+def createFile(filename, data):
+    with open("%s.json" % (filename), "w") as fp:
         try:
             json.dump(data, fp)
         except:
             print("Unable to export playlists")
             return(-1)
 
-        print("spotify-%s.json created at %s" % (username, filepath))
+        curDir = os.getcwd()
+        print("%s created at %s" % (filename, curDir))
+        return(0)
 
 
 def main():
@@ -168,22 +161,29 @@ def main():
     if (not args.tracks) or (not args.playlists):
         print("You must specify at least one option.\nCheck --help for more information.")
 
-    # sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
-    #                      client_secret=CLIENT_KEY, redirect_uri=URI, scope=LIBRARY_READ_SCOPE))
+    if args.tracks and not args.playlists:
+        scope = "user-library-read"
 
-    # data = getSavedTracks(sp)
-    # # print(len(data))
+        sp = getAuth(scope)
+        data = getSavedTracks(sp)
+        createFile(args.tracks, data)
 
-    # # data = getPlaylists(sp)
+    elif args.playlists and not args.tracks:
+        scope = "playlist-read-private"
 
-    # with open("%s/spotify-tracks-%s.json" % (filepath, USERNAME), "w") as fp:
-    #     try:
-    #         json.dump(data, fp)
-    #     except:
-    #         print("Unable to export playlists")
-    #         return(-1)
+        sp = getAuth(scope)
+        data = getPlaylists(sp)
+        createFile(args.playlists, data)
 
-    #     print("spotify-tracks-%s.json created at %s" % (USERNAME, filepath))
+    elif args.tracks and args.playlists:
+        scope = "user-library-read playlist-read-private"
+
+        sp = getAuth(scope)
+
+        playlistData = getPlaylists(sp)
+        createFile(args.playlists, data)
+        trackData = getSavedTracks(data)
+        createFile(args.tracks, data)
 
 
 if __name__ == "__main__":
