@@ -7,6 +7,7 @@ import argparse
 import datetime
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyOauthError
 from dotenv import load_dotenv
 
 URI = "http://127.0.0.1:9090"
@@ -20,11 +21,6 @@ USERNAME = ""
 # Add artist genre data
 # Get all liked albums
 
-# Analytics:
-# Top 25 Artists
-# Top 3 Genres
-# Genre Frequency
-
 
 def configure():
     load_dotenv()
@@ -36,8 +32,14 @@ def configure():
 
 
 def getAuth(scope):
-    return spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
-                                                     client_secret=CLIENT_KEY, redirect_uri=URI, scope=LIBRARY_READ_SCOPE))
+    auth = None
+    try:
+        auth = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
+                                                         client_secret=CLIENT_KEY, redirect_uri=URI, scope=LIBRARY_READ_SCOPE))
+    except SpotifyOauthError:
+        print("ERROR: Unable to authenticate user")
+
+    return auth
 
 
 def getPlaylistName(sp, playlistId):
@@ -134,10 +136,11 @@ def getSavedTracks(sp):
 
 
 def createFile(filename, data):
-    curDatetime = datetime.datetime.now().strftime("%m%d%Y-%H%M")
-    print(curDatetime)
+    curDatetime = datetime.datetime.now().strftime("%m%d%Y-%H%M%S")
+    fullFilename = filename + "-" + curDatetime
+    # print(curDatetime)
 
-    with open("%s-%s.json" % (filename, curDatetime), "w") as fp:
+    with open("%s.json" % (fullFilename), "w") as fp:
         try:
             json.dump(data, fp)
         except:
@@ -145,7 +148,7 @@ def createFile(filename, data):
             return(-1)
 
         curDir = os.getcwd()
-        print("%s created at %s" % (filename, curDir))
+        print("%s created at %s" % (fullFilename, curDir))
         return(0)
 
 
@@ -158,34 +161,39 @@ def main():
     parser.add_argument(
         "-t", "--tracks", help="Export saved tracks to provided filename")
     args = parser.parse_args()
-    print(args)
+    # print(args)
 
-    if (not args.tracks) or (not args.playlists):
+    if (not args.tracks) and (not args.playlists):
         print("You must specify at least one option.\nCheck --help for more information.")
+        return(-1)
 
     if args.tracks and not args.playlists:
         scope = "user-library-read"
-
         sp = getAuth(scope)
+
+        print("Exporting Saved Tracks...")
         data = getSavedTracks(sp)
         createFile(args.tracks, data)
 
     elif args.playlists and not args.tracks:
         scope = "playlist-read-private"
-
         sp = getAuth(scope)
+
+        print("Exporting Saved Playlists...")
         data = getPlaylists(sp)
         createFile(args.playlists, data)
 
     elif args.tracks and args.playlists:
         scope = "user-library-read playlist-read-private"
-
         sp = getAuth(scope)
 
+        print("Exporting Saved Playlists...")
         playlistData = getPlaylists(sp)
-        createFile(args.playlists, data)
-        trackData = getSavedTracks(data)
-        createFile(args.tracks, data)
+        createFile(args.playlists, playlistData)
+
+        print("Exporting Saved Tracks...")
+        trackData = getSavedTracks(sp)
+        createFile(args.tracks, trackData)
 
 
 if __name__ == "__main__":
