@@ -1,6 +1,3 @@
-# Created: Feb 09 2022
-# Spotify Playlist Exporter
-
 import json
 import os
 import argparse
@@ -18,9 +15,6 @@ LIBRARY_READ_SCOPE = "user-library-read"
 CLIENT_ID = ""
 CLIENT_KEY = ""
 USERNAME = ""
-
-# TO DO:
-# Get all liked albums
 
 
 def configure():
